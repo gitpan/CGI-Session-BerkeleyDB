@@ -1,6 +1,6 @@
 package CGI::Session::BerkeleyDB;
 
-# $Id: BerkeleyDB.pm,v 3.0 2002/11/28 18:28:17 sherzodr Exp $
+# $Id: BerkeleyDB.pm,v 3.1 2002/11/28 18:46:02 sherzodr Exp $
 
 use strict;
 use base qw(
@@ -19,8 +19,8 @@ use vars qw($VERSION $REVISION $FileName);
 $FileName = 'cgisess.db';
 
 
-($REVISION) = '$Revision: 3.0 $' =~ m/Revision:\s*(\S+)/;
-$VERSION = '3.0';
+($REVISION) = '$Revision: 3.1 $' =~ m/Revision:\s*(\S+)/;
+$VERSION = '3.1';
 
 sub store {
     my ($self, $sid, $options, $data) = @_;
@@ -97,7 +97,7 @@ sub teardown {
 
 
 
-# $Id: BerkeleyDB.pm,v 3.0 2002/11/28 18:28:17 sherzodr Exp $
+# $Id: BerkeleyDB.pm,v 3.1 2002/11/28 18:46:02 sherzodr Exp $
 
 1;
 
@@ -182,4 +182,4 @@ L<Apache::Session|Apache::Session> - another fine alternative to CGI::Session
 =cut
 
 
-# $Id: BerkeleyDB.pm,v 3.0 2002/11/28 18:28:17 sherzodr Exp $
+# $Id: BerkeleyDB.pm,v 3.1 2002/11/28 18:46:02 sherzodr Exp $

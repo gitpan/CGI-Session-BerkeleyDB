@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.PL,v 3.2 2002/11/28 23:07:35 sherzodr Exp $
 use strict;
 use ExtUtils::MakeMaker;
 
@@ -16,7 +16,7 @@ MAKEFILE
 WriteMakefile(
     NAME			=> 'CGI::Session::BerkeleyDB',
     VERSION_FROM	=> 'BerkeleyDB.pm',
-    PREREQ_PM		=> {BerkeleyDB=>undef},
+    PREREQ_PM		=> {BerkeleyDB=>undef, 'CGI::Session' => 3.5},
     ABSTRACT_FROM	=> 'BerkeleyDB.pm', 
     AUTHOR			=> 'Sherzod Ruzmetov <sherzodr@cpan.org>',
 );

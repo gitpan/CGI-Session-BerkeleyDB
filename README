@@ -1,0 +1,76 @@
+NAME
+    CGI::Session::BerkeleyDB - Driver for CGI::Session
+
+SYNOPSIS
+        use constant COOKIE => "TEST_SID";  # cookie to store the session id
+
+        use CGI::Session::BerkeleyDB;
+        use CGI;
+
+        my $cgi = new CGI;
+
+        # getting the
+        my $c_sid = $cgi->cookie(COOKIE) || undef;
+
+        my $session = new CGI::Session::BerkeleyDB($c_sid,
+            {
+                LockDirectory   =>'/tmp/locks',
+                FileName        => '/tmp/sessions.db'
+            });
+
+        # now let's create a sid cookie and send it to the client's browser.
+        # if it is an existing session, it will be the same as before,
+        # but if it's a new session, $session->id() will return a new session id.
+        {
+            my $new_cookie = $cgi->cookie(-name=>COOKIE, -value=>$session->id);
+            print $cgi->header(-cookie=>$new_cookie);
+        }
+
+        print $cgi->start_html("CGI::Session::File");
+
+        # assuming we already saved the users first name in the session
+        # when he visited it couple of days ago, we can greet him with
+        # his first name
+
+        print "Hello", $session->param("f_name"), ", how have you been?";
+
+        print $cgi->end_html();
+
+DESCRIPTION
+    "CGI::Session::BerkeleyDB" is the driver for "CGI::Session" to store and
+    retrieve the session data in and from the Berkeley DB 2.x or better. For
+    this you need to have the BerkeleyDB manpage installed properly. To be
+    able to write your own drivers for the the CGI::Session manpage, please
+    consult developer section of the manual.
+
+    Constructor requires two arguments, as all other the CGI::Session
+    manpage drivers do. The first argument has to be session id to be
+    initialized (or undef to tell the the CGI::Session manpage to create a
+    new session id). The second argument has to be a reference to a hash
+    with a following required key/value pair:
+
+    If you do not have BerkeleyDB 2.x or better, you are better of going
+    with the CGI::Session::DB_File manpage, which is an interface for
+    BerkeleyDB 1.x.
+
+    "Filename"
+        path to a file where all the session data will be stored
+
+    "CGI::Session::BerkeleyDB" uses Data::Dumper to serialize the session
+    data before storing it in the session file.
+
+    For examples of the "CGI::Session" usage, please refer to CGI::Session
+    manual
+
+AUTHOR
+    Sherzod B. Ruzmetov <sherzodr@cpan.org>
+
+COPYRIGHT
+    This library is free software and can be redistributed under the same
+    conditions as Perl itself.
+
+SEE ALSO
+    the CGI::Session manpage, the CGI::Session::File manpage, the
+    CGI::Session::DB_File manpage, the CGI::Session::MySQL manpage, the
+    Apache::Session manpage
+

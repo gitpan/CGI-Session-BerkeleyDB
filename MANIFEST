@@ -4,4 +4,9 @@ MANIFEST
 MANIFEST.SKIP
 Makefile.PL
 README
-test.pl
+t/api3_berkeleydb.t
+t/api3_berkeleydb_complexds.t
+t/api3_berkeleydb_freezethaw.t
+t/api3_berkeleydb_obj_store.t
+t/api3_berkeleydb_storable.t
+t/berkeleydb.t

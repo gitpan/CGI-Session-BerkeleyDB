@@ -1,68 +1,103 @@
 package CGI::Session::BerkeleyDB;
 
-use strict;
-use vars qw($VERSION);
-use base qw(CGI::Session CGI::Session::MD5);
+# $Id: BerkeleyDB.pm,v 3.0 2002/11/28 18:28:17 sherzodr Exp $
 
-use Data::Dumper;
+use strict;
+use base qw(
+    CGI::Session
+    CGI::Session::ID::MD5
+    CGI::Session::Serialize::Default
+);
+
+
+# Load neccessary libraries below
+use File::Spec;
 use BerkeleyDB;
 
-$VERSION = "1.1";
+use vars qw($VERSION $REVISION $FileName);
+
+$FileName = 'cgisess.db';
 
 
-# do not use any indentation
-$Data::Dumper::Indent = 0;
+($REVISION) = '$Revision: 3.0 $' =~ m/Revision:\s*(\S+)/;
+$VERSION = '3.0';
+
+sub store {
+    my ($self, $sid, $options, $data) = @_;
+
+    my $storable_data = $self->freeze($data);
+
+    my $args = $options->[1] || {};
+
+    my $filename = File::Spec->catfile($args->{Directory},
+                            $args->{FileName} || $FileName );
+
+    tie (my %db, "BerkeleyDB::Hash", -Filename=>$filename, -Flags=>DB_CREATE)
+                or die $!;
+    $db{$sid} = $storable_data;
+    untie(%db);
+
+    return 1;
+}
+
 
 sub retrieve {
     my ($self, $sid, $options) = @_;
 
-    my $file    = $options->{FileName};
+    # you will need to retrieve the stored data, and
+    # deserialize it using $self->thaw() method
 
-    tie (my %session, "BerkeleyDB::Hash", -Filename=>$file, -Flags=>DB_RDONLY)
-        or $self->error("Couldn't open $file, $! $BerkeleyDB::Error"), return;
-    my $tmp = $session{$sid} or $self->error("Session ID '$sid' doesn't exist"), return;
+    my $args = $options->[1] || {};
+    my $filename = File::Spec->catfile($args->{Directory},
+                                $args->{FileName} || $FileName);
 
-    untie %session;
+    tie (my %db, "BerkeleyDB::Hash", -Filename=>$filename, -Flags=>DB_RDONLY)
+                    or die $!;
+    unless ( defined $db{$sid} ) {
+        untie(%db);
+        return undef;
+    }
 
-    my $data = {};  eval $tmp;
-
+    my $data = $self->thaw($db{$sid});
+    untie(%db);
     return $data;
 }
 
 
 
+sub remove {
+    my ($self, $sid, $options) = @_;
 
+    # you simply need to remove the data associated
+    # with the id
 
-sub store {
-    my ($self, $sid, $hashref, $options) = @_;
+    my $args = $options->[1] || {};
+    my $filename = File::Spec->catfile($args->{Directory},
+                    $args->{FileName} || $FileName);
 
-    my $file    = $options->{FileName};
-    tie my %session, "BerkeleyDB::Hash", 
-						-Filename => $file, 
-						-Flags=> DB_CREATE 						
-			or $self->error("Couldn't open $file: $! $BerkeleyDB::Error"), return;
-
-    my $d = Data::Dumper->new([$hashref], ["data"]);
-
-    $session{$sid} = $d->Dump();
-
-    untie %session;
+    tie (my %db, "BerkeleyDB::Hash", -Filename=>$filename) or die $!;
+    unless ( defined $db{$sid} ) {
+        untie(%db);
+        return undef;
+    }
+    delete $db{$sid};
+    untie(%db);
 
     return 1;
 }
 
 
 
-sub tear_down {
+sub teardown {
     my ($self, $sid, $options) = @_;
 
-    my $file = $options->{FileName};
-
-    tie (my %session, "BerkeleyDB::Hash", -Filename=>$file) or die $!;
-    delete $session{$sid};
-    untie %session;
-
+    # this is called just before session object is destroyed
 }
+
+
+
+
+# $Id: BerkeleyDB.pm,v 3.0 2002/11/28 18:28:17 sherzodr Exp $
 
 1;
 
@@ -70,86 +105,81 @@ sub tear_down {
 
 =head1 NAME
 
-CGI::Session::BerkeleyDB - Driver for CGI::Session 
+CGI::Session::BerkeleyDB - BerkeleyDB CGI::Session driver
 
 =head1 SYNOPSIS
 
-    use constant COOKIE => "TEST_SID";  # cookie to store the session id
+    use CGI::Session qw/-api3/;
+    $session = new CGI::Session("driver:BerkeleyDB", undef,
+                                    {Directory=>'/tmp'} );
 
-    use CGI::Session::BerkeleyDB;
-    use CGI;
-
-    my $cgi = new CGI;
-
-    # getting the
-    my $c_sid = $cgi->cookie(COOKIE) || undef;
-
-    my $session = new CGI::Session::BerkeleyDB($c_sid,
-        {
-            LockDirectory   =>'/tmp/locks',
-            FileName        => '/tmp/sessions.db'
-        });
-
-    # now let's create a sid cookie and send it to the client's browser.
-    # if it is an existing session, it will be the same as before,
-    # but if it's a new session, $session->id() will return a new session id.
-    {
-        my $new_cookie = $cgi->cookie(-name=>COOKIE, -value=>$session->id);
-        print $cgi->header(-cookie=>$new_cookie);
-    }
-
-    print $cgi->start_html("CGI::Session::File");
-
-    # assuming we already saved the users first name in the session
-    # when he visited it couple of days ago, we can greet him with
-    # his first name
-
-    print "Hello", $session->param("f_name"), ", how have you been?";
-
-    print $cgi->end_html();
+For more examples, consult L<CGI::Session> manual
 
 =head1 DESCRIPTION
 
-C<CGI::Session::BerkeleyDB> is the driver for C<CGI::Session> to store and retrieve
-the session data in and from the Berkeley DB 2.x or better. For this you
-need to have L<BerkeleyDB> installed properly. To be able to write your own
-drivers for the L<CGI::Session>, please consult L<developer section|CGI::Session/DEVEROPER SECTION>
-of the L<manual|CGI::Session>.
+CGI::Session::BerkeleyDB is a CGI::Session driver to store session data in BerkeleyDB 2.x or better. If you have older version of BerkeleyDB, use L<DB_File|CGI::Session::DB_File> driver instead.
 
-Constructor requires two arguments, as all other L<CGI::Session> drivers do.
-The first argument has to be session id to be initialized (or undef to tell
-the L<CGI::Session>  to create a new session id). The second argument has to be
-a reference to a hash with a following required key/value pair:
+To write your own drivers for B<CGI::Session> refere to L<CGI::Session> manual.
 
+The driver requires both BerkeleyDB and  L<BerkeleyDB> Perl interface installed.
+You can download latest version of BerkeleyDB from http://www.sleepycat.com .
+Latest release of L<BerkeleyDB> Perl interface can be acquired from your nearest CPAN mirror.
 
-If you do not have BerkeleyDB 2.x or better, you are better of going with 
-L<CGI::Session::DB_File>, which is an interface for BerkeleyDB 1.x.
+=head1 ATTRIBUTES
 
-=over 4
+The only driver attribute required is B<Directory>, which denotes the location where session database and necessary locks to be stored. By default, name of the session database file is "cgisess.db". If you'd rather use a different name, there's B<FileName> attribute you can set:
 
-=item C<Filename>
-
-path to a file where all the session data will be stored
-
-=back
-
-C<CGI::Session::BerkeleyDB> uses L<Data::Dumper|Data::Dumper> to serialize the session data
-before storing it in the session file.
-
-For examples of the C<CGI::Session> usage, please refer to L<CGI::Session manual|CGI::Session>
-
-=head1 AUTHOR
-
-Sherzod B. Ruzmetov <sherzodr@cpan.org>
+    $session = new CGI::Session("driver:BerkeleyDB", undef,
+                    {Directory=>'/tmp', FileName=>'my_sessions.db'});
 
 =head1 COPYRIGHT
 
-This library is free software and can be redistributed under the same
-conditions as Perl itself.
+Copyright (C) 2002 Sherzod Ruzmetov. All rights reserved.
+
+This library is free software and can be modified and distributed under the same
+terms as Perl itself.
+
+=head1 AUTHOR
+
+Sherzod Ruzmetov <sherzodr@cpan.org>
+
+Feedbacks, suggestions and patches are welcome.
 
 =head1 SEE ALSO
 
-L<CGI::Session>, L<CGI::Session::File>, L<CGI::Session::DB_File>,
-L<CGI::Session::MySQL>, L<Apache::Session>
+=over 4
+
+=item *
+
+L<CGI::Session|CGI::Session> - CGI::Session manual
+
+=item *
+
+L<DB_File|CGI::Session::DB_File> - BerkeleyDB driver for BerkeleyDB 2.x and older.
+
+=item *
+
+L<CGI::Session::Tutorial|CGI::Session::Tutorial> - extended CGI::Session manual
+
+=item *
+
+L<CGI::Session::CookBook|CGI::Session::CookBook> - practical solutions for real life problems
+
+=item *
+
+B<RFC 2965> - "HTTP State Management Mechanism" found at ftp://ftp.isi.edu/in-notes/rfc2965.txt
+
+=item *
+
+L<CGI|CGI> - standard CGI library
+
+=item *
+
+L<Apache::Session|Apache::Session> - another fine alternative to CGI::Session
+
+=back
 
 =cut
+
+
+# $Id: BerkeleyDB.pm,v 3.0 2002/11/28 18:28:17 sherzodr Exp $

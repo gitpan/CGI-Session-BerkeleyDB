@@ -1,76 +1,59 @@
 NAME
-    CGI::Session::BerkeleyDB - Driver for CGI::Session
+    CGI::Session::BerkeleyDB - BerkeleyDB CGI::Session driver
 
 SYNOPSIS
-        use constant COOKIE => "TEST_SID";  # cookie to store the session id
+        use CGI::Session qw/-api3/;
+        $session = new CGI::Session("driver:BerkeleyDB", undef,
+                                        {Directory=>'/tmp'} );
 
-        use CGI::Session::BerkeleyDB;
-        use CGI;
-
-        my $cgi = new CGI;
-
-        # getting the
-        my $c_sid = $cgi->cookie(COOKIE) || undef;
-
-        my $session = new CGI::Session::BerkeleyDB($c_sid,
-            {
-                LockDirectory   =>'/tmp/locks',
-                FileName        => '/tmp/sessions.db'
-            });
-
-        # now let's create a sid cookie and send it to the client's browser.
-        # if it is an existing session, it will be the same as before,
-        # but if it's a new session, $session->id() will return a new session id.
-        {
-            my $new_cookie = $cgi->cookie(-name=>COOKIE, -value=>$session->id);
-            print $cgi->header(-cookie=>$new_cookie);
-        }
-
-        print $cgi->start_html("CGI::Session::File");
-
-        # assuming we already saved the users first name in the session
-        # when he visited it couple of days ago, we can greet him with
-        # his first name
-
-        print "Hello", $session->param("f_name"), ", how have you been?";
-
-        print $cgi->end_html();
+    For more examples, consult the CGI::Session manpage manual
 
 DESCRIPTION
-    "CGI::Session::BerkeleyDB" is the driver for "CGI::Session" to store and
-    retrieve the session data in and from the Berkeley DB 2.x or better. For
-    this you need to have the BerkeleyDB manpage installed properly. To be
-    able to write your own drivers for the the CGI::Session manpage, please
-    consult developer section of the manual.
+    CGI::Session::BerkeleyDB is a CGI::Session driver to store session data
+    in BerkeleyDB 2.x or better. If you have older version of BerkeleyDB,
+    use DB_File driver instead.
 
-    Constructor requires two arguments, as all other the CGI::Session
-    manpage drivers do. The first argument has to be session id to be
-    initialized (or undef to tell the the CGI::Session manpage to create a
-    new session id). The second argument has to be a reference to a hash
-    with a following required key/value pair:
+    To write your own drivers for CGI::Session refere to the CGI::Session
+    manpage manual.
 
-    If you do not have BerkeleyDB 2.x or better, you are better of going
-    with the CGI::Session::DB_File manpage, which is an interface for
-    BerkeleyDB 1.x.
+    The driver requires both BerkeleyDB and the BerkeleyDB manpage Perl
+    interface installed. You can download latest version of BerkeleyDB from
+    http://www.sleepycat.com . Latest release of the BerkeleyDB manpage Perl
+    interface can be acquired from your nearest CPAN mirror.
 
-    "Filename"
-        path to a file where all the session data will be stored
+ATTRIBUTES
+    The only driver attribute required is Directory, which denotes the
+    location where session database and necessary locks to be stored. By
+    default, name of the session database file is "cgisess.db". If you'd
+    rather use a different name, there's FileName attribute you can set:
 
-    "CGI::Session::BerkeleyDB" uses Data::Dumper to serialize the session
-    data before storing it in the session file.
-
-    For examples of the "CGI::Session" usage, please refer to CGI::Session
-    manual
-
-AUTHOR
-    Sherzod B. Ruzmetov <sherzodr@cpan.org>
+        $session = new CGI::Session("driver:BerkeleyDB", undef,
+                        {Directory=>'/tmp', FileName=>'my_sessions.db'});
 
 COPYRIGHT
-    This library is free software and can be redistributed under the same
-    conditions as Perl itself.
+    Copyright (C) 2002 Sherzod Ruzmetov. All rights reserved.
+
+    This library is free software and can be modified and distributed under
+    the same terms as Perl itself.
+
+AUTHOR
+    Sherzod Ruzmetov <sherzodr@cpan.org>
+
+    Feedbacks, suggestions and patches are welcome.
 
 SEE ALSO
-    the CGI::Session manpage, the CGI::Session::File manpage, the
-    CGI::Session::DB_File manpage, the CGI::Session::MySQL manpage, the
-    Apache::Session manpage
+    *   CGI::Session - CGI::Session manual
+
+    *   DB_File - BerkeleyDB driver for BerkeleyDB 2.x and older.
+
+    *   CGI::Session::Tutorial - extended CGI::Session manual
+
+    *   CGI::Session::CookBook - practical solutions for real life problems
+
+    *   RFC 2965 - "HTTP State Management Mechanism" found at
+        ftp://ftp.isi.edu/in-notes/rfc2965.txt
+
+    *   CGI - standard CGI library
+
+    *   Apache::Session - another fine alternative to CGI::Session
 
